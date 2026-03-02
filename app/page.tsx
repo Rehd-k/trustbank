@@ -13,6 +13,7 @@ import {
   Play
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const LandingPage: React.FC = () => {
   // Add state to track if the mobile menu is open
@@ -28,9 +29,9 @@ const LandingPage: React.FC = () => {
       <nav className="fixed w-full z-50 bg-[#0F172A]/80 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-linear-to-br from-blue-500 to-cyan-400 flex items-center justify-center">
-              <Zap size={20} className="text-white fill-white" />
-            </div>
+
+            <Image src={'/logo.png'} alt='logo' width={50} height={50} />
+
             <span className="text-white font-bold text-xl tracking-tight">St. Georges Trust Bank</span>
           </div>
 
@@ -274,9 +275,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
           <div className="col-span-2 lg:col-span-2 space-y-6">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-linear-to-br from-blue-500 to-cyan-400 flex items-center justify-center">
-                <Zap size={14} className="text-white fill-white" />
-              </div>
+              <Image src={'/logo.png'} alt='logo' width={50} height={50} />
               <span className="text-white font-bold tracking-tight">St. Georges Trust Bank</span>
             </div>
             <p className="text-slate-500 text-sm max-w-xs">Banking made simple, secure, and beautiful. Designed for the modern internet economy.</p>
