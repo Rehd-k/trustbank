@@ -1,4 +1,5 @@
-import React from 'react';
+'use client'
+import React, { useState } from 'react';
 import {
   ArrowRight,
   ShieldCheck,
@@ -8,10 +9,18 @@ import {
   CheckCircle2,
   Star,
   Menu,
+  X,
   Play
 } from 'lucide-react';
+import Link from 'next/link';
 
 const LandingPage: React.FC = () => {
+  // Add state to track if the mobile menu is open
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Helper to close menu when a link is clicked
+  const closeMenu = () => setIsMobileMenuOpen(false);
+
   return (
     <div className="min-h-screen bg-[#0F172A] text-slate-300 font-sans selection:bg-blue-500/30">
 
@@ -25,6 +34,7 @@ const LandingPage: React.FC = () => {
             <span className="text-white font-bold text-xl tracking-tight">St. Georges Trust Bank</span>
           </div>
 
+          {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a>
@@ -32,17 +42,42 @@ const LandingPage: React.FC = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <button className="text-sm font-medium hover:text-white transition-colors">Log in</button>
-            <button className="bg-white text-slate-900 px-5 py-2.5 rounded-full text-sm font-bold hover:bg-slate-200 transition-colors">
+            <Link href={'/login'} className="text-sm font-medium hover:text-white transition-colors">Log in</Link>
+            <Link href={'/signup'} className="bg-white text-slate-900 px-5 py-2.5 rounded-full text-sm font-bold hover:bg-slate-200 transition-colors">
               Get Started
-            </button>
+            </Link>
           </div>
 
-          <button className="md:hidden text-slate-300">
-            <Menu size={24} />
+          {/* Mobile Menu Toggle Button */}
+          <button
+            className="md:hidden text-slate-300 hover:text-white z-50 transition-colors"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
       </nav>
+
+      {/* --- MOBILE MENU OVERLAY --- */}
+      <div
+        className={`fixed inset-0 z-40 bg-[#0F172A] transform transition-transform duration-300 ease-in-out md:hidden flex flex-col pt-24 px-6 border-b border-slate-800 ${isMobileMenuOpen ? 'translate-y-0' : '-translate-y-full'
+          }`}
+      >
+        <div className="flex flex-col gap-6 text-lg font-medium mb-8">
+          <a href="#features" onClick={closeMenu} className="hover:text-white transition-colors py-2 border-b border-slate-800">Features</a>
+          <a href="#how-it-works" onClick={closeMenu} className="hover:text-white transition-colors py-2 border-b border-slate-800">How it Works</a>
+          <a href="#testimonials" onClick={closeMenu} className="hover:text-white transition-colors py-2 border-b border-slate-800">Testimonials</a>
+        </div>
+
+        <div className="flex flex-col gap-4 mt-auto pb-10">
+          <Link href={'/login'} onClick={closeMenu} className="w-full text-center text-white py-4 rounded-full font-bold border border-slate-700 hover:bg-slate-800 transition-colors">
+            Log in
+          </Link>
+          <Link href={'/signup'} onClick={closeMenu} className="w-full bg-white text-slate-900 py-4 rounded-full font-bold hover:bg-slate-200 transition-colors">
+            Get Started
+          </Link>
+        </div>
+      </div>
 
       {/* --- HERO SECTION --- */}
       <section className="pt-32 pb-20 px-6 relative overflow-hidden">
@@ -51,7 +86,6 @@ const LandingPage: React.FC = () => {
 
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
           <div className="space-y-8 text-center lg:text-left">
-           
 
             <h1 className="text-5xl lg:text-7xl font-bold text-white leading-tight tracking-tight">
               The future of <br className="hidden lg:block" />
