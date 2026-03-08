@@ -1,78 +1,117 @@
-'use client'
+'use client';
 import Link from "next/link";
-import { BellIcon, CreditCard, Logs, MenuIcon, Send, Settings2, UserIcon } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import {
+    LayoutDashboard, ArrowLeftRight, Send, Settings, Wallet, Bell, UserIcon, Menu, X
+} from "lucide-react";
 
-export default function ClientLayout({
-    children,
-}: Readonly<{
-    children: React.ReactNode;
-}>) {
+type User = { firstname?: string; lastName?: string; firstName?: string; email?: string };
+
+const NAV = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
+    { href: "/transfer", label: "Transfer", icon: Send },
+    { href: "/fund-account", label: "Fund", icon: Wallet },
+    { href: "/settings", label: "Settings", icon: Settings },
+];
+
+export default function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const router = useRouter();
+    const [user, setUser] = useState<User | null>(null);
+    const [drawerOpen, setDrawerOpen] = useState(false);
+
+    useEffect(() => {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        if (!token) { router.replace("/login"); return; }
+        api.get("/api/me").then(res => setUser(res.data)).catch(() => {
+            localStorage.removeItem("token");
+            router.replace("/login");
+        });
+    }, [router]);
+
+    const firstName = user?.firstname || user?.firstName || "";
+    const initials = firstName ? firstName.charAt(0).toUpperCase() : "U";
+
     return (
-
-        <main className="mx-auto relative md:grid md:grid-cols-6 w-full">
-            <nav className="flex w-full justify-center">
-                {/* Sidebar for medium and up screens */}
-                <aside className="hidden md:flex flex-col md:w-full md:h-screen bg-primary p-4">
-                    <div className="md:w-full flex flex-col py-4 gap-4 items-center border-b border-gray-200">
-                        <div className="h-14 w-14 rounded-full flex justify-center items-center bg-gray-200">
-                            <UserIcon className="size-6 text-primary" />
-                        </div>
-                        <div className="text-center">
-                            <p className="text-xl font-thin">Good Morning</p>
-                            <p>User, User</p>
-                        </div>
+        <div className="min-h-screen bg-[#0b0e14] text-white font-sans">
+            {/* Desktop Sidebar */}
+            <aside className="hidden md:flex fixed left-0 top-0 h-full w-64 flex-col bg-[#0F172A] border-r border-slate-800 z-30">
+                <div className="flex items-center gap-3 px-6 h-20 border-b border-slate-800">
+                    <div className="w-10 h-10 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center font-bold text-blue-400">{initials}</div>
+                    <div className="min-w-0">
+                        <p className="text-white text-sm font-semibold truncate">{firstName || "Welcome"}</p>
+                        <p className="text-slate-500 text-xs truncate">{user?.email || ""}</p>
                     </div>
-                    <nav className="flex flex-col gap-4 mt-6 text-white">
-                        <Link href="/dashboard" className="hover:underline">Dashboard</Link>
-                        <Link href="/transactions" className="hover:underline">Transactions</Link>
-                        <Link href="/settings" className="hover:underline">Settings</Link>
-                    </nav>
-                </aside>
-
-                {/* Navbar floating at the bottom for small screens */}
-                <nav className="md:hidden fixed bottom-5 left-1/2 -translate-x-1/2 bg-linear-to-r from-primary to-primary/90 w-[90%] max-w-md rounded-2xl flex justify-around py-6 px-2 shadow-lg z-50">
-                    <Link href="/transactions" className={`flex flex-col items-center text-white hover:text-yellow-200 ${pathname === '/transactions' ? 'py-4 px-4 bg-secondary rounded-2xl' : ''}`}>
-                        <Logs className="size-5 mb-1" /><span className="text-xs">Activities</span>
-                    </Link>
-                    <Link href="/transfer" className={`flex flex-col items-center text-white hover:text-yellow-200 ${pathname === '/transfer' ? 'py-4 px-4 bg-secondary rounded-2xl' : ''}`}>
-                        <Send className="size-5 mb-1" /><span className="text-xs">Transfer</span>
-                    </Link>
-                    <Link href="/dashboard" className={`flex flex-col items-center text-white hover:text-yellow-200 ${pathname === '/dashboard' ? 'py-4 px-2 bg-secondary rounded-2xl' : ''}`}>
-                        <MenuIcon className="size-5 mb-1" /><span className="text-xs">Dashboard</span>
-                    </Link>
-
-                    <Link href="/settings" className={`flex flex-col items-center text-white hover:text-yellow-200 ${pathname === '/settings' ? 'py-4 px-2 bg-secondary rounded-2xl' : ''}`}>
-                        <CreditCard className="size-5 mb-1" /><span className="text-xs">Settings</span>
-                    </Link>
-                    <Link href="/accounts" className={`flex flex-col items-center text-white hover:text-yellow-200 ${pathname === '/accounts' ? 'py-4 px-2 bg-secondary rounded-2xl' : ''}`}>
-                        <UserIcon className="size-5 mb-1" /><span className="text-xs">Account</span>
-                    </Link>
-                </nav>
-            </nav>
-
-            <div className="col-span-5">
-                <header className="top-0 w-full md:flex items-center justify-between p-2 md:bg-primary/90 bg-transparent hidden">
-                    <MenuIcon className="size-4 hover:cursor-pointer" />
-
-                    <div className="flex gap-2">
-                        <button className="p-2 rounded-full bg-primary hover:cursor-pointer">
-                            <Settings2 className="size-4 text-yellow-400" />
-                        </button>
-                        <button className="p-2 rounded-full bg-primary hover:cursor-pointer">
-                            <BellIcon className="size-4 text-white" />
-                        </button>
-                        <button className="p-2 rounded-full bg-primary hover:cursor-pointer">
-                            <UserIcon className="size-4 text-white" />
-                        </button>
-                    </div>
-                </header>
-                <div className="w-full h-full bg-linear-to-r from-blue-950 to-indigo-950/90 pb-40">
-                    {children}
                 </div>
-            </div>
+                <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                    {NAV.map(({ href, label, icon: Icon }) => {
+                        const active = pathname === href || (href !== "/dashboard" && pathname?.startsWith(href));
+                        return (
+                            <Link key={href} href={href}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                  ${active ? "bg-blue-600/20 text-blue-400 border border-blue-500/20" : "text-slate-400 hover:text-white hover:bg-slate-800/60"}`}>
+                                <Icon size={18} />
+                                {label}
+                            </Link>
+                        );
+                    })}
+                </nav>
+                <div className="px-6 py-4 border-t border-slate-800">
+                    <p className="text-xs text-slate-600">St. Georges Trust Bank</p>
+                </div>
+            </aside>
 
-        </main>
+            {/* Mobile drawer overlay */}
+            {drawerOpen && (
+                <div className="fixed inset-0 z-40 bg-black/60 md:hidden" onClick={() => setDrawerOpen(false)}>
+                    <div className="absolute left-0 top-0 h-full w-64 bg-[#0F172A] border-r border-slate-800 flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-5 h-16 border-b border-slate-800">
+                            <p className="text-white font-bold text-sm">Menu</p>
+                            <button onClick={() => setDrawerOpen(false)} className="text-slate-400 hover:text-white"><X size={20} /></button>
+                        </div>
+                        <nav className="flex-1 px-3 py-4 space-y-1">
+                            {NAV.map(({ href, label, icon: Icon }) => (
+                                <Link key={href} href={href} onClick={() => setDrawerOpen(false)}
+                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                    ${pathname === href ? "bg-blue-600/20 text-blue-400 border border-blue-500/20" : "text-slate-400 hover:text-white hover:bg-slate-800/60"}`}>
+                                    <Icon size={18} />
+                                    {label}
+                                </Link>
+                            ))}
+                        </nav>
+                    </div>
+                </div>
+            )}
+
+            {/* Mobile top bar */}
+            <header className="md:hidden fixed top-0 left-0 right-0 z-20 h-16 flex items-center justify-between px-4 bg-[#0F172A]/90 backdrop-blur-md border-b border-slate-800">
+                <button onClick={() => setDrawerOpen(true)} className="text-slate-400 hover:text-white transition-colors"><Menu size={22} /></button>
+                <p className="text-white font-bold text-sm">St. Georges</p>
+                <Link href="/settings" className="w-8 h-8 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center font-bold text-blue-400 text-sm">{initials}</Link>
+            </header>
+
+            {/* Main content */}
+            <main className="md:ml-64 pt-16 md:pt-0 min-h-screen">
+                {children}
+            </main>
+
+            {/* Mobile bottom nav */}
+            <nav className="md:hidden fixed bottom-5 left-1/2 -translate-x-1/2 bg-[#0F172A]/95 border border-slate-700/60 backdrop-blur-md w-[92vw] max-w-md rounded-2xl flex justify-around py-3 px-1 shadow-2xl z-20">
+                {NAV.slice(0, 5).map(({ href, label, icon: Icon }) => {
+                    const active = pathname === href;
+                    return (
+                        <Link key={href} href={href}
+                            className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all
+                ${active ? "bg-blue-600/20 text-blue-400" : "text-slate-500 hover:text-white"}`}>
+                            <Icon size={20} />
+                            <span className="text-[10px] font-medium">{label}</span>
+                        </Link>
+                    );
+                })}
+            </nav>
+        </div>
     );
 }

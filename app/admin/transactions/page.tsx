@@ -2,26 +2,49 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { Plus, X, ArrowLeftRight } from "lucide-react";
 
-type Tx = { _id: string; fromAccount: string; toAccount: string; amount: number; currency: string; type: string; status: string; date: string };
+type Tx = {
+  _id: string;
+  fromAccount: string;
+  toAccount: string;
+  amount: number;
+  currency: string;
+  type: string;
+  status: string;
+  date: string;
+};
+
+const STATUS_STYLES: Record<string, string> = {
+  completed: "bg-green-500/10 text-green-400 border-green-500/20",
+  pending: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  failed: "bg-red-500/10 text-red-400 border-red-500/20",
+};
 
 export default function AdminTransactionsPage() {
   const [list, setList] = useState<Tx[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ fromAccount: "", toAccount: "", amount: "", currency: "USD", updateBalances: true });
   const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   function load() {
-    api.get("/api/admin/transactions?limit=50").then((res) => setList(Array.isArray(res.data) ? res.data : [])).catch(() => {});
+    setLoading(true);
+    api
+      .get("/api/admin/transactions?limit=50")
+      .then((res) => setList(Array.isArray(res.data) ? res.data : []))
+      .catch(() => { })
+      .finally(() => setLoading(false));
   }
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   function create(e: React.FormEvent) {
     e.preventDefault();
     setMessage("");
+    setCreating(true);
     api
       .post("/api/admin/transactions", {
         fromAccount: form.fromAccount,
@@ -31,55 +54,141 @@ export default function AdminTransactionsPage() {
         updateBalances: form.updateBalances,
       })
       .then(() => {
-        setMessage("Created");
+        setMessage("Transaction created successfully.");
+        setIsError(false);
         setShowCreate(false);
+        setForm({ fromAccount: "", toAccount: "", amount: "", currency: "USD", updateBalances: true });
         load();
       })
-      .catch((err) => setMessage("Error: " + (err.response?.data?.error ?? "Failed")));
+      .catch((err) => {
+        setMessage("Error: " + (err.response?.data?.error ?? "Failed"));
+        setIsError(true);
+      })
+      .finally(() => setCreating(false));
   }
 
   return (
-    <div>
-      <h1 className="mb-4 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Transactions</h1>
-      {message && <p className="mb-2 rounded bg-green-100 p-2 text-green-800 dark:bg-green-900/30">{message}</p>}
-      <button onClick={() => setShowCreate(!showCreate)} className="mb-4 rounded bg-zinc-900 px-4 py-2 text-white dark:bg-zinc-100 dark:text-zinc-900">
-        {showCreate ? "Cancel" : "Create transaction"}
-      </button>
-      {showCreate && (
-        <form onSubmit={create} className="mb-6 flex flex-col gap-2 rounded border border-zinc-200 p-4 dark:border-zinc-700">
-          <input required placeholder="From account number" value={form.fromAccount} onChange={(e) => setForm((f) => ({ ...f, fromAccount: e.target.value }))} className="rounded border px-3 py-2 dark:bg-zinc-800" />
-          <input required placeholder="To account number" value={form.toAccount} onChange={(e) => setForm((f) => ({ ...f, toAccount: e.target.value }))} className="rounded border px-3 py-2 dark:bg-zinc-800" />
-          <input required type="number" step="0.01" placeholder="Amount" value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} className="rounded border px-3 py-2 dark:bg-zinc-800" />
-          <input placeholder="Currency" value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))} className="rounded border px-3 py-2 dark:bg-zinc-800" />
-          <label><input type="checkbox" checked={form.updateBalances} onChange={(e) => setForm((f) => ({ ...f, updateBalances: e.target.checked }))} /> Update balances</label>
-          <button type="submit" className="rounded bg-zinc-800 py-2 text-white">Create</button>
-        </form>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white mb-1">Transactions</h1>
+          <p className="text-slate-500 text-sm">{list.length} recent records</p>
+        </div>
+        <button
+          onClick={() => setShowCreate(!showCreate)}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm transition-all
+            ${showCreate
+              ? "bg-slate-700 hover:bg-slate-600 text-slate-300"
+              : "bg-blue-600 hover:bg-blue-500 text-white"}`}
+        >
+          {showCreate ? <><X size={15} /> Cancel</> : <><Plus size={15} /> Create Transaction</>}
+        </button>
+      </div>
+
+      {message && (
+        <div className={`flex items-start gap-3 rounded-2xl px-5 py-3 border ${isError
+          ? "bg-red-500/10 border-red-500/20 text-red-300"
+          : "bg-green-500/10 border-green-500/20 text-green-300"}`}>
+          <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${isError ? "bg-red-400" : "bg-green-400"}`} />
+          <p className="text-sm">{message}</p>
+        </div>
       )}
-      <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-zinc-200 dark:border-zinc-700">
-              <th className="p-3">From</th>
-              <th className="p-3">To</th>
-              <th className="p-3">Amount</th>
-              <th className="p-3">Type</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.map((tx) => (
-              <tr key={tx._id} className="border-b border-zinc-100 dark:border-zinc-700">
-                <td className="p-3">{tx.fromAccount}</td>
-                <td className="p-3">{tx.toAccount}</td>
-                <td className="p-3">{tx.currency} {tx.amount}</td>
-                <td className="p-3">{tx.type}</td>
-                <td className="p-3">{tx.status}</td>
-                <td className="p-3">{new Date(tx.date).toLocaleString()}</td>
-              </tr>
+
+      {/* Create form */}
+      {showCreate && (
+        <div className="bg-slate-800/40 border border-slate-700/60 rounded-3xl p-6">
+          <h2 className="text-sm font-semibold text-white mb-5 flex items-center gap-2">
+            <ArrowLeftRight size={15} className="text-blue-400" />
+            New Transaction
+          </h2>
+          <form onSubmit={create} className="grid sm:grid-cols-2 gap-4">
+            {[
+              { name: "fromAccount", placeholder: "From account number", label: "From Account" },
+              { name: "toAccount", placeholder: "To account number", label: "To Account" },
+              { name: "amount", placeholder: "0.00", label: "Amount", type: "number" },
+              { name: "currency", placeholder: "USD", label: "Currency" },
+            ].map(({ name, placeholder, label, type }) => (
+              <div key={name}>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{label}</label>
+                <input
+                  required={name !== "currency"}
+                  type={type ?? "text"}
+                  step={type === "number" ? "0.01" : undefined}
+                  placeholder={placeholder}
+                  value={(form as unknown as Record<string, string>)[name]}
+                  onChange={(e) => setForm((f) => ({ ...f, [name]: e.target.value }))}
+                  className="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all"
+                />
+              </div>
             ))}
-          </tbody>
-        </table>
+            <div className="sm:col-span-2 flex items-center gap-3">
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <div
+                  onClick={() => setForm((f) => ({ ...f, updateBalances: !f.updateBalances }))}
+                  className={`w-11 h-6 rounded-full flex items-center transition-colors ${form.updateBalances ? "bg-blue-600" : "bg-slate-600"}`}
+                >
+                  <div className={`w-4 h-4 bg-white rounded-full shadow mx-1 transition-transform ${form.updateBalances ? "translate-x-5" : "translate-x-0"}`} />
+                </div>
+                <span className="text-sm text-slate-300">Update account balances</span>
+              </label>
+            </div>
+            <div className="sm:col-span-2">
+              <button
+                type="submit"
+                disabled={creating}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-6 py-2.5 rounded-full font-bold text-sm transition-all"
+              >
+                {creating
+                  ? <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg> Creating…</>
+                  : "Create Transaction"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="bg-slate-800/40 border border-slate-700/60 rounded-3xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-700/60">
+                {["From", "To", "Amount", "Type", "Status", "Date"].map((h) => (
+                  <th key={h} className="px-5 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                  <tr key={i} className="border-b border-slate-700/40">
+                    {[...Array(6)].map((_, j) => (
+                      <td key={j} className="px-5 py-4"><div className="h-4 bg-slate-700/60 rounded animate-pulse w-20" /></td>
+                    ))}
+                  </tr>
+                ))
+              ) : list.length === 0 ? (
+                <tr><td colSpan={6} className="px-5 py-12 text-center text-slate-500">No transactions found</td></tr>
+              ) : (
+                list.map((tx) => (
+                  <tr key={tx._id} className="border-b border-slate-700/40 hover:bg-slate-700/20 transition-colors">
+                    <td className="px-5 py-4 text-slate-300 font-mono text-xs">{tx.fromAccount}</td>
+                    <td className="px-5 py-4 text-slate-300 font-mono text-xs">{tx.toAccount}</td>
+                    <td className="px-5 py-4 font-semibold text-white">{tx.currency} {tx.amount?.toLocaleString()}</td>
+                    <td className="px-5 py-4 text-slate-400 capitalize">{tx.type}</td>
+                    <td className="px-5 py-4">
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize
+                        ${STATUS_STYLES[tx.status?.toLowerCase()] ?? "bg-slate-700/60 text-slate-400 border-slate-600"}`}>
+                        {tx.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-slate-400 text-xs">{new Date(tx.date).toLocaleString()}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

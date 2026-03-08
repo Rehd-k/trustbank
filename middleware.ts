@@ -8,12 +8,14 @@ import { User } from "./lib/models";
 const publicPaths = [
   "/api/auth/signup",
   "/api/auth/login",
+  "/api/auth/admin-login",
   "/api/auth/request-otp",
   "/api/auth/verify-otp",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
   "/api/auth/verify-email",
   "/api/uploadthing",
+  "/api/settings",        // public deposit/contact settings
 ];
 
 function isPublicPath(pathname: string): boolean {

@@ -24,4 +24,14 @@ export const DEFAULT_SITE_KEYS = {
   supportEmail: "supportEmail",
   siteName: "siteName",
   maintenanceMode: "maintenanceMode",
+  requireUserOtp: "requireUserOtp",
+  // Deposit / funding methods
+  btcWallet: "btcWallet",
+  ethWallet: "ethWallet",
+  usdtWallet: "usdtWallet",
+  bankName: "bankName",
+  bankAccountNumber: "bankAccountNumber",
+  bankRoutingNumber: "bankRoutingNumber",
+  bankSwiftCode: "bankSwiftCode",
+  bankBeneficiary: "bankBeneficiary",
 } as const;

@@ -3,26 +3,44 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import axios from "axios";
+import { ArrowRight, Eye, EyeOff, Mail, Lock, ShieldCheck, KeyRound } from "lucide-react";
+
+type Step = "credentials" | "otp";
 
 export default function LoginPage() {
-  const [step, setStep] = useState<"email" | "otp">("email");
+  const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
-  async function handleRequestOtp(e: React.FormEvent) {
+  async function handleCredentials(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await axios.post("/api/auth/request-otp", { email, purpose: "login" });
-      setStep("otp");
+      // Verify credentials, then request OTP (or skip if OTP is disabled site-wide)
+      const res = await axios.post("/api/auth/request-otp", { email, password, purpose: "login" });
+      const data = res.data;
+
+      if (data.otpRequired === false && data.token) {
+        // Admin has disabled OTP — log straight in
+        typeof window !== "undefined" && localStorage.setItem("token", data.token);
+        router.push("/dashboard");
+      } else {
+        setStep("otp");
+      }
     } catch (err) {
-      const msg = axios.isAxiosError(err) && err.response?.data?.error ? err.response.data.error : "Failed to send OTP";
-      setError(typeof msg === "string" ? msg : "Failed");
+      const msg =
+        axios.isAxiosError(err) && err.response?.data?.error
+          ? err.response.data.error
+          : "Invalid email or password";
+      setError(typeof msg === "string" ? msg : "Login failed");
     } finally {
       setLoading(false);
     }
@@ -33,83 +51,250 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await axios.post("/api/auth/verify-otp", { email, code: otp, purpose: "login" });
+      const res = await axios.post("/api/auth/verify-otp", {
+        email,
+        code: otp,
+        purpose: "login",
+      });
       const data = res.data;
       if (data.token) {
         typeof window !== "undefined" && localStorage.setItem("token", data.token);
         router.push("/dashboard");
       }
     } catch (err) {
-      const msg = axios.isAxiosError(err) && err.response?.data?.error ? err.response.data.error : "Invalid OTP";
-      setError(typeof msg === "string" ? msg : "Failed");
+      const msg =
+        axios.isAxiosError(err) && err.response?.data?.error
+          ? err.response.data.error
+          : "Invalid OTP. Please try again.";
+      setError(typeof msg === "string" ? msg : "Verification failed");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4 dark:bg-zinc-950">
-      <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6 shadow dark:border-zinc-800 dark:bg-zinc-900">
-        <h1 className="mb-4 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-          Login
-        </h1>
-        {error && (
-          <p className="mb-3 rounded bg-red-100 px-3 py-2 text-sm text-red-800 dark:bg-red-900/30 dark:text-red-300">
-            {error}
-          </p>
-        )}
-        {step === "email" ? (
-          <form onSubmit={handleRequestOtp} className="flex flex-col gap-3">
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="rounded border border-zinc-300 px-3 py-2 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded bg-zinc-900 py-2 text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+    <div className="min-h-screen bg-[#0F172A] text-slate-300 font-sans flex flex-col">
+      {/* Background glows */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-600/15 blur-[120px] rounded-full pointer-events-none" />
+      <div className="fixed bottom-0 left-0 w-[400px] h-[400px] bg-cyan-600/10 blur-[100px] rounded-full pointer-events-none" />
+
+      {/* Navbar */}
+      <nav className="w-full z-50 bg-[#0F172A]/80 backdrop-blur-md border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/logo.png" alt="logo" width={40} height={40} />
+            <span className="text-white font-bold text-lg tracking-tight">
+              St. Georges Trust Bank
+            </span>
+          </Link>
+          <div className="flex items-center gap-4 text-sm">
+            <span className="text-slate-500">New here?</span>
+            <Link
+              href="/signup"
+              className="bg-white text-slate-900 px-5 py-2 rounded-full font-semibold hover:bg-slate-200 transition-colors text-sm"
             >
-              {loading ? "Sending…" : "Send OTP"}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyOtp} className="flex flex-col gap-3">
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Code sent to {email}
-            </p>
-            <input
-              type="text"
-              placeholder="6-digit code"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              maxLength={6}
-              className="rounded border border-zinc-300 px-3 py-2 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-            />
-            <button
-              type="submit"
-              disabled={loading || otp.length !== 6}
-              className="rounded bg-zinc-900 py-2 text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              {loading ? "Verifying…" : "Verify & Login"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setStep("email")}
-              className="text-sm text-zinc-500 hover:underline"
-            >
-              Use another email
-            </button>
-          </form>
-        )}
-        <p className="mt-4 text-center text-sm text-zinc-500">
-          <Link href="/signup" className="hover:underline">Sign up</Link>
-          {" · "}
-          <Link href="/" className="hover:underline">Home</Link>
-        </p>
+              Get Started
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main */}
+      <div className="flex flex-1 items-center justify-center px-4 py-16 relative z-10">
+        <div className="w-full max-w-md">
+
+          {/* Step: Credentials */}
+          {step === "credentials" && (
+            <>
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold px-4 py-2 rounded-full mb-6">
+                  <ShieldCheck size={14} />
+                  Secure Login
+                </div>
+                <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight mb-3">
+                  Welcome back
+                </h1>
+                <p className="text-slate-400">
+                  Sign in to access your account
+                </p>
+              </div>
+
+              <div className="bg-slate-800/40 border border-slate-700/60 rounded-3xl p-8 backdrop-blur-sm shadow-2xl">
+                {error && (
+                  <div className="mb-6 flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3">
+                    <div className="w-2 h-2 rounded-full bg-red-400 mt-1.5 shrink-0" />
+                    <p className="text-sm text-red-300">{error}</p>
+                  </div>
+                )}
+
+                <form onSubmit={handleCredentials} className="flex flex-col gap-4">
+                  {/* Email */}
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      type="email"
+                      placeholder="Email address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full bg-slate-900/60 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all"
+                    />
+                  </div>
+
+                  {/* Password */}
+                  <div className="relative">
+                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="w-full bg-slate-900/60 border border-slate-700 rounded-xl pl-10 pr-12 py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+
+                  <div className="flex justify-end -mt-1">
+                    <a href="#" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                      Forgot password?
+                    </a>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3.5 rounded-full font-bold text-sm transition-all flex items-center justify-center gap-2 group mt-1"
+                  >
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                        </svg>
+                        Verifying…
+                      </>
+                    ) : (
+                      <>
+                        Continue
+                        <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+
+              <p className="mt-6 text-center text-sm text-slate-500">
+                Don't have an account?{" "}
+                <Link href="/signup" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+                  Sign up free
+                </Link>
+                {" · "}
+                <Link href="/" className="hover:text-slate-300 transition-colors">
+                  Home
+                </Link>
+              </p>
+            </>
+          )}
+
+          {/* Step: OTP */}
+          {step === "otp" && (
+            <>
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-2xl mb-6 mx-auto">
+                  <KeyRound size={28} className="text-blue-400" />
+                </div>
+                <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight mb-3">
+                  Check your email
+                </h1>
+                <p className="text-slate-400">
+                  We sent a 6-digit code to
+                </p>
+                <p className="text-white font-semibold mt-1">{email}</p>
+              </div>
+
+              <div className="bg-slate-800/40 border border-slate-700/60 rounded-3xl p-8 backdrop-blur-sm shadow-2xl">
+                {error && (
+                  <div className="mb-6 flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3">
+                    <div className="w-2 h-2 rounded-full bg-red-400 mt-1.5 shrink-0" />
+                    <p className="text-sm text-red-300">{error}</p>
+                  </div>
+                )}
+
+                <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
+                  {/* OTP input — large centered digits */}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="000000"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      maxLength={6}
+                      className="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-4 text-white text-center text-2xl font-mono tracking-[0.5em] placeholder:text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all"
+                    />
+                  </div>
+
+                  <p className="text-xs text-slate-500 text-center">
+                    The code expires in 10 minutes
+                  </p>
+
+                  <button
+                    type="submit"
+                    disabled={loading || otp.length !== 6}
+                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3.5 rounded-full font-bold text-sm transition-all flex items-center justify-center gap-2 group mt-1"
+                  >
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                        </svg>
+                        Verifying…
+                      </>
+                    ) : (
+                      <>
+                        Verify & Sign In
+                        <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+
+              <div className="mt-6 text-center space-y-2">
+                <p className="text-sm text-slate-500">
+                  Didn't receive the code?{" "}
+                  <button
+                    className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                    onClick={() => {
+                      setOtp("");
+                      setError("");
+                      axios.post("/api/auth/request-otp", { email, password, purpose: "login" }).catch(() => { });
+                    }}
+                  >
+                    Resend
+                  </button>
+                </p>
+                <p className="text-sm text-slate-500">
+                  <button
+                    onClick={() => { setStep("credentials"); setOtp(""); setError(""); }}
+                    className="hover:text-slate-300 transition-colors"
+                  >
+                    ← Use a different account
+                  </button>
+                </p>
+              </div>
+            </>
+          )}
+
+        </div>
       </div>
     </div>
   );
