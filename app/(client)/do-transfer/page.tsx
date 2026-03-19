@@ -7,6 +7,8 @@ import TransactionSummary from './TransactionSummary';
 import AdditionalInfoSection from './AdditionalInfoSection';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import TransferReceiptModal from '@/src/receipts/TransferReceiptModal';
+import { TransferReceiptData } from '@/src/receipts/transferReceipt';
 
 type User = {
     _id: string;
@@ -35,7 +37,7 @@ const LocalTransferPage = () => {
     const [bankName, setBankName] = useState("")
     const [routingNumber, setRoutingNumber] = useState("")
     const [isInternal, setIsInternal] = useState(true)
-    const [success, setSuccess] = useState(false)
+    const [receipt, setReceipt] = useState<TransferReceiptData | null>(null)
     const [description, setDescription] = useState("")
 
     const getUserInfo = async () => {
@@ -61,7 +63,6 @@ const LocalTransferPage = () => {
         e.preventDefault();
         setLoading(true)
         setError("");
-        setSuccess(false);
         if (!localStorage.getItem("token")) {
             router.push("/login");
             return;
@@ -76,7 +77,7 @@ const LocalTransferPage = () => {
             description
         })
         try {
-            await api.post("/api/transfer", {
+            const tx = await api.post("/api/transfer", {
                 fromAccountNumber: fromAccountNumber?.accountNumber,
                 toAccountNumber: accountNumber,
                 amount: transferAmount,
@@ -84,9 +85,24 @@ const LocalTransferPage = () => {
                 kind: isInternal ? 'internal' : 'external',
                 description
             });
+            setReceipt({
+                transactionId: tx.data?._id ?? `tx-${Date.now()}`,
+                createdAt: tx.data?.date ?? new Date().toISOString(),
+                fromAccount: fromAccountNumber?.accountNumber ?? "N/A",
+                toAccount: accountNumber,
+                amount: transferAmount,
+                currency: fromAccountNumber?.currency ?? "USD",
+                transferType: "local",
+                transferKind: isInternal ? "internal" : "external",
+                note: description,
+                status: tx.data?.status ?? "completed",
+            });
             setAccountName("");
             setBankName("");
             setAmount(0);
+            setTransferAmount(0);
+            setAccountNumber("");
+            setDescription("");
         } catch (err) {
             setError(err as string);
         } finally {
@@ -196,6 +212,12 @@ const LocalTransferPage = () => {
             </div>
 
 
+            <TransferReceiptModal
+                open={!!receipt}
+                receipt={receipt}
+                onClose={() => setReceipt(null)}
+                onAnotherTransfer={() => setReceipt(null)}
+            />
         </form>
     );
 };

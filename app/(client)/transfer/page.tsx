@@ -6,6 +6,8 @@ import Link from "next/link";
 import axios from "axios";
 import { api } from "@/lib/api";
 import { ArrowLeft, ArrowRight, Send, CheckCircle2, ChevronDown } from "lucide-react";
+import TransferReceiptModal from "@/src/receipts/TransferReceiptModal";
+import { TransferReceiptData } from "@/src/receipts/transferReceipt";
 
 type Account = { _id: string; accountNumber: string; accountType: string; accountBalance: number; currency: string };
 
@@ -17,7 +19,7 @@ export default function TransferPage() {
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [receipt, setReceipt] = useState<TransferReceiptData | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -39,8 +41,27 @@ export default function TransferPage() {
     if (parseFloat(amount) > availableBalance) { setError("Insufficient balance"); return; }
     setLoading(true);
     try {
-      await api.post("/api/transfer", { fromAccountNumber: fromAccount, toAccountNumber, amount: parseFloat(amount), type: "local" });
-      setSuccess(true);
+      const transferAmount = parseFloat(amount);
+      const tx = await api.post("/api/transfer", {
+        fromAccountNumber: fromAccount,
+        toAccountNumber,
+        amount: transferAmount,
+        type: "local",
+        kind: "internal",
+        description: note,
+      });
+      setReceipt({
+        transactionId: tx.data?._id ?? `tx-${Date.now()}`,
+        createdAt: tx.data?.date ?? new Date().toISOString(),
+        fromAccount,
+        toAccount: toAccountNumber,
+        amount: transferAmount,
+        currency,
+        transferType: "local",
+        transferKind: "internal",
+        note,
+        status: tx.data?.status ?? "completed",
+      });
       setToAccountNumber("");
       setAmount("");
       setNote("");
@@ -52,32 +73,10 @@ export default function TransferPage() {
     }
   }
 
-  if (success) {
-    return (
-      <div className="min-h-screen bg-[#0b0e14] flex items-center justify-center p-6">
-        <div className="bg-[#1a1d24] border border-green-500/30 rounded-3xl p-10 text-center space-y-5 max-w-sm w-full">
-          <div className="w-20 h-20 mx-auto rounded-full bg-green-500/20 flex items-center justify-center">
-            <CheckCircle2 size={40} className="text-green-400" />
-          </div>
-          <h2 className="text-2xl font-bold text-white">Transfer Sent!</h2>
-          <p className="text-slate-400 text-sm">Your transfer of <span className="text-white font-bold">{currency} {parseFloat(amount || "0").toLocaleString()}</span> was processed successfully.</p>
-          <div className="flex flex-col gap-3 pt-2">
-            <button onClick={() => setSuccess(false)} className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold text-sm text-white transition-all">
-              Send Another
-            </button>
-            <Link href="/dashboard" className="w-full py-3 bg-slate-700 hover:bg-slate-600 rounded-2xl font-bold text-sm text-white transition-all text-center">
-              Back to Dashboard
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#0b0e14] text-white font-sans pb-10">
       {/* Header */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-blue-700 to-[#0b0e14] pt-6 pb-12 px-6 rounded-b-[3rem]">
+      <div className="relative overflow-hidden bg-linear-to-b from-blue-700 to-[#0b0e14] pt-6 pb-12 px-6 rounded-b-[3rem]">
         <button onClick={() => router.back()} className="bg-white/10 p-2 rounded-xl mb-6 backdrop-blur-md hover:bg-white/20 transition-colors">
           <ArrowLeft size={20} />
         </button>
@@ -90,7 +89,7 @@ export default function TransferPage() {
         </div>
       </div>
 
-      <div className="px-6 -mt-6 space-y-5">
+      <div className="px-6 mt-6 pb-24 space-y-5">
         {error && (
           <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3">
             <div className="w-2 h-2 rounded-full bg-red-400 mt-1.5 shrink-0" />
@@ -185,6 +184,12 @@ export default function TransferPage() {
           </button>
         </form>
       </div>
+      <TransferReceiptModal
+        open={!!receipt}
+        receipt={receipt}
+        onClose={() => setReceipt(null)}
+        onAnotherTransfer={() => setReceipt(null)}
+      />
     </div>
   );
 }

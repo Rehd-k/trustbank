@@ -62,10 +62,11 @@ body {
 }
 
 .embla {
+  width: 100%;
   max-width: 48rem;
   margin: auto;
   --slide-height: 19rem;
-  --slide-spacing: 1rem;
+  --slide-spacing: 0.75rem;
   --slide-size: 100%;
 }
 
@@ -83,6 +84,20 @@ body {
   flex: 0 0 var(--slide-size);
   min-width: 0;
   padding-left: var(--slide-spacing);
+}
+
+@media (min-width: 768px) {
+  .embla {
+    max-width: 56rem;
+    --slide-spacing: 1rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .embla {
+    max-width: 62rem;
+    --slide-spacing: 1.25rem;
+  }
 }
 
 .embla__slide__number {

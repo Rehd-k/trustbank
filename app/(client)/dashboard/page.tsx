@@ -66,7 +66,7 @@ export default function DashboardPage() {
   ]);
 
   const slides =
-    user?.accounts.map((res, index) => <div key={index} className="relative w-105 h-50 rounded-2xl overflow-hidden shadow-2xl">
+    user?.accounts.map((res, index) => <div key={index} className="relative w-full max-w-104 sm:max-w-lg md:max-w-xl lg:max-w-160 h-52 sm:h-56 rounded-2xl overflow-hidden shadow-2xl mx-auto">
 
       {/* Base Gradient */}
       <div className="absolute inset-0 bg-linear-to-br from-[#0ea5e9] to-[#1e3a8a]" />
@@ -166,18 +166,22 @@ export default function DashboardPage() {
       <div className="absolute inset-0 
         bg-[radial-gradient(circle_at_75%_75%,rgba(255,255,255,0.05),transparent_45%)]" />
 
-      <div className="relative z-10">
-        <div className="pb-20 px-2 bg-linear-to-br from-[#0b1120] via-[#222066] to-[#151342]">
+      <div className="relative z-10 mx-auto w-full max-w-7xl">
+        <div className="pb-14 md:pb-16 px-4 sm:px-6 lg:px-8 xl:px-10 bg-linear-to-br from-[#0b1120] via-[#222066] to-[#151342]">
           <ClientHead user={user} />
-          <EmblaCarousel slides={slides} />
-          <Options />
+          <div className="mt-4 md:mt-5">
+            <EmblaCarousel slides={slides} />
+          </div>
+          <div className="mt-5 md:mt-6">
+            <Options />
+          </div>
         </div>
 
-        <div className="bg-linear-to-br from-[#23386b] via-[#23225a] to-[#151342] px-2 pb-10">
-          <section className="">
-            <div className="flex justify-between py-5">
-              <p className="text-gray-200 text-sm font-bold">Quick Transfer</p>
-              <Link className="text-gray-200 font-thin text-xs flex" href={""}>
+        <div className="bg-linear-to-br from-[#23386b] via-[#23225a] to-[#151342] px-4 sm:px-6 lg:px-8 xl:px-10 pb-12 md:pb-16">
+          <section className="pt-6 md:pt-8">
+            <div className="flex justify-between items-center py-4 md:py-5">
+              <p className="text-gray-200 text-sm md:text-base font-bold">Quick Transfer</p>
+              <Link className="text-gray-200 font-thin text-xs md:text-sm flex items-center" href={""}>
                 <p className="">View All</p>
                 <ChevronRight className="size-4" />
               </Link>
@@ -186,22 +190,22 @@ export default function DashboardPage() {
             <AddButton />
 
 
-            <div className="flex justify-between mt-10">
-              <p className="text-gray-200 text-sm font-bold">Your Active Cards</p>
-              <Link className="text-gray-200 font-thin text-xs flex" href={""}>
+            <div className="flex justify-between items-center mt-8 md:mt-10">
+              <p className="text-gray-200 text-sm md:text-base font-bold">Your Active Cards</p>
+              <Link className="text-gray-200 font-thin text-xs md:text-sm flex items-center" href={""}>
                 <p className="">Manage</p>
                 <ChevronRight className="size-4" />
               </Link>
             </div>
 
-            <div className="backdrop-blur-md rounded-xl shadow-lg p-2 mt-5 border border-blue-900/50">
+            <div className="backdrop-blur-md rounded-xl shadow-lg p-3 md:p-5 mt-4 md:mt-5 border border-blue-900/50 max-w-4xl">
 
               <div className="flex flex-col justify-between">
 
                 {/* Debit Card with Flip Animation */}
 
 
-                <div className="relative md:w-96 w-full h-48 perspective-distant group cursor-pointer select-none"
+                <div className="relative w-full max-w-104 md:max-w-120 h-48 md:h-52 perspective-distant group cursor-pointer select-none"
                   tabIndex={0} // allow keyboard focus for accessibility
                 >
                   <div
@@ -293,16 +297,16 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          <section className=" px-2">
-            <div className="flex justify-between py-5">
+          <section className="pt-8 md:pt-10">
+            <div className="flex justify-between items-center py-4 md:py-5">
               <p className="text-gray-200 font-semibold text-xs md:text-sm">Financial Services</p>
-              <Link className="text-gray-200 font-thin text-xs flex" href={""}>
+              <Link className="text-gray-200 font-thin text-xs md:text-sm flex items-center" href={""}>
                 <p className="">View All</p>
                 <ChevronRight className="size-4" />
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
               <FinanacialServiceCard />
               <FinanacialServiceCard />
               <FinanacialServiceCard />
@@ -310,13 +314,13 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          <div className="p-2 text-white font-sans flex flex-col gap-4 max-w-md mx-auto">
+          <div className="pt-8 md:pt-10 text-white font-sans flex flex-col gap-4 md:gap-5 max-w-3xl lg:max-w-4xl">
             <AccountHealthCard />
             <MonthlySummaryCard />
             <RecentActivity userId={user._id} />
           </div>
 
-          <section className="">
+          <section className="pt-8 md:pt-10 max-w-4xl">
             <Achievements />
             <HelpSection />
             <SupportBanner />

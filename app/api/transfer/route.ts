@@ -10,7 +10,7 @@ const LocalTransferSchema = z.object({
   toAccountNumber: z.string(),
   amount: z.number().positive(),
   description: z.string().optional(),
-  kind: z.string(),
+  kind: z.enum(["internal", "external"]).optional(),
 });
 
 const InternationalTransferSchema = z.object({
@@ -19,7 +19,7 @@ const InternationalTransferSchema = z.object({
   toAccountCurrency: z.string().length(3),
   amount: z.number().positive(),
   description: z.string().optional(),
-  kind: z.string(),
+  kind: z.enum(["internal", "external"]).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const body = await request.json();
-    console.log(body.data)
     const type = body.type as "local" | "international" | undefined;
+    const kind = body.kind as "internal" | "external" | undefined;
     const schema = type === "international" ? InternationalTransferSchema : LocalTransferSchema;
     const parsed = schema.safeParse(
       type === "international"
@@ -38,19 +38,22 @@ export async function POST(request: NextRequest) {
           toAccountCurrency: body.toAccountCurrency,
           amount: body.amount,
           description: body.description,
-          kind: body.kind
+          kind
         }
         : {
           fromAccountNumber: body.fromAccountNumber,
           toAccountNumber: body.toAccountNumber,
           amount: body.amount,
           description: body.description,
-          kind: body.kind
+          kind
         }
     );
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
+    const data = parsed.data;
+    const transferKind: "internal" | "external" =
+      data.kind ?? (type === "international" ? "external" : "internal");
 
     await connectDB();
 
@@ -60,7 +63,7 @@ export async function POST(request: NextRequest) {
     if (user.transfersDisabled) return NextResponse.json({ error: "Transfers are disabled for your account" }, { status: 403 });
 
     const fromAccount = await Account.findOne({
-      accountNumber: parsed.data.fromAccountNumber,
+      accountNumber: data.fromAccountNumber,
       userId,
     });
 
@@ -68,27 +71,16 @@ export async function POST(request: NextRequest) {
     if (!fromAccount) {
       return NextResponse.json({ error: "From account not found" }, { status: 404 });
     }
-    if (fromAccount.accountBalance < parsed.data.amount) {
+    if (fromAccount.accountBalance < data.amount) {
       return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
     }
     let toAccount: any
-    if (parsed.data.kind == 'internal') {
-      toAccount = await Account.findOne({ accountNumber: parsed.data.toAccountNumber });
+    if (transferKind === "internal") {
+      toAccount = await Account.findOne({ accountNumber: data.toAccountNumber });
       if (!toAccount) {
         return NextResponse.json({ error: "To account not found" }, { status: 404 });
       }
     }
-
-    console.log({
-      date: new Date(),
-      fromAccount: fromAccount.accountNumber,
-      toAccount: parsed.data.kind == 'internal' ? toAccount.accountNumber : parsed.data.toAccountNumber,
-      amount: parsed.data.amount,
-      currency: fromAccount.currency,
-      type: type === "international" ? "international" : "local",
-      status: "completed",
-      description: parsed.data.description,
-    })
 
     try {
       const tx = await Transaction.create(
@@ -96,12 +88,12 @@ export async function POST(request: NextRequest) {
           {
             date: new Date(),
             fromAccount: fromAccount.accountNumber,
-            toAccount: parsed.data.kind == 'internal' ? toAccount.accountNumber : parsed.data.toAccountNumber,
-            amount: parsed.data.amount,
+            toAccount: transferKind === "internal" ? toAccount.accountNumber : data.toAccountNumber,
+            amount: data.amount,
             currency: fromAccount.currency,
             type: type === "international" ? "international" : "local",
             status: "completed",
-            description: parsed.data.description,
+            description: data.description,
           },
         ],
       );
@@ -109,15 +101,15 @@ export async function POST(request: NextRequest) {
       await Account.findByIdAndUpdate(
         fromAccount._id,
         {
-          $inc: { accountBalance: -parsed.data.amount },
+          $inc: { accountBalance: -data.amount },
           $push: { transactions: t._id },
         },
       );
-      if (parsed.data.kind == 'internal')
+      if (transferKind === "internal")
         await Account.findByIdAndUpdate(
           toAccount._id,
           {
-            $inc: { accountBalance: parsed.data.amount },
+            $inc: { accountBalance: data.amount },
             $push: { transactions: t._id },
           },
         );

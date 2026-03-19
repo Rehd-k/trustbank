@@ -11,7 +11,7 @@ export function Options() {
     const [isSendOpen, setIsSendOpen] = useState(false);
 
     return <>
-        <section className="flex justify-around">
+        <section className="flex flex-wrap items-center justify-between gap-3 md:gap-4 md:justify-start">
             <Link href={'/fund-account'}>
                 <ButtonRounded color={"bg-secondary hover:bg-secondary/50"} icon={<Plus className="size-4" />} title={"Top Up"} onClick={undefined} />
             </Link>
@@ -19,9 +19,7 @@ export function Options() {
 
             <ButtonRounded color={"bg-accent hover:bg-accent/50"} icon={<Download className="size-4" />} onClick={() => setIsModalOpen(true)} title={"Receive"} />
 
-            <ButtonRounded color={"bg-yellow-600 hover:bg-yellow-600"} icon={<CircleEllipsis className="size-4" />} onClick={function (): {} {
-                throw new Error("Function not implemented.");
-            }} title={"More"} />
+            <ButtonRounded color={"bg-yellow-600 hover:bg-yellow-600"} icon={<CircleEllipsis className="size-4" />} onClick={() => { }} title={"More"} />
         </section>
         {/* The Receive Modal */}
         <ReceiveBitcoinModal
