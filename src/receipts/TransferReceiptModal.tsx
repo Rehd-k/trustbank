@@ -59,6 +59,7 @@ export default function TransferReceiptModal({ open, receipt, onClose, onAnother
   }
 
   async function handleEmailFallback() {
+    if (!receipt) return;
     const subject = encodeURIComponent(`Transfer Receipt ${receipt.transactionId}`);
     const body = encodeURIComponent(`${message}\n\nPDF will be downloaded to attach manually.`);
     await downloadTransferReceiptPdf(receipt);
