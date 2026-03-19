@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     if (!account) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
-    const grant = await Grant.create({
+    const created = await Grant.create({
       userId,
       accountId: account._id,
       amount: parsed.data.amount,
@@ -48,7 +48,11 @@ export async function POST(request: NextRequest) {
       currency: parsed.data.currency ?? "USD",
       status: "pending",
     });
-    return NextResponse.json(grant);
+
+    const populated = await Grant.findById(created._id)
+      .populate("accountId", "accountNumber accountType")
+      .lean();
+    return NextResponse.json(populated);
   } catch (e) {
     console.error("Create grant error:", e);
     return NextResponse.json({ error: "Failed to create grant" }, { status: 500 });

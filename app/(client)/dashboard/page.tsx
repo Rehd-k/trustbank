@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, BanknoteX, Gift, Percent, CreditCard } from "lucide-react"
 import Link from "next/link";
 import { api } from "@/lib/api";
 import FinanacialServiceCard from "@/src/components/financailservice.card";
@@ -307,10 +307,34 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-              <FinanacialServiceCard />
-              <FinanacialServiceCard />
-              <FinanacialServiceCard />
-              <FinanacialServiceCard />
+              <FinanacialServiceCard
+                title="Loans"
+                statusLabel="Available"
+                description="Quick approval process"
+                href="/loans"
+                Icon={BanknoteX}
+              />
+              <FinanacialServiceCard
+                title="Grants"
+                statusLabel="Available"
+                description="Simple application, fast response"
+                href="/grants"
+                Icon={Gift}
+              />
+              <FinanacialServiceCard
+                title="Tax refunds"
+                statusLabel="Available"
+                description="Apply and track your refund request"
+                href="/tax-refunds"
+                Icon={Percent}
+              />
+              <FinanacialServiceCard
+                title="Virtual cards"
+                statusLabel="Available"
+                description="Get a virtual card for online purchases"
+                href="/virtual-cards"
+                Icon={CreditCard}
+              />
             </div>
           </section>
 

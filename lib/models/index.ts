@@ -4,6 +4,7 @@ export { Transaction } from "./Transaction";
 export { Card } from "./Card";
 export { Loan } from "./Loan";
 export { Grant } from "./Grant";
+export { VirtualCardRequest } from "./VirtualCardRequest";
 export { Otp } from "./Otp";
 export { Session } from "./Session";
 export { PaymentProof } from "./PaymentProof";
@@ -16,6 +17,11 @@ export type { ITransaction } from "./Transaction";
 export type { ICard } from "./Card";
 export type { ILoan, LoanStatus } from "./Loan";
 export type { IGrant, GrantStatus } from "./Grant";
+export type {
+  IVirtualCardRequest,
+  VirtualCardRequestStatus,
+  VirtualCardRequestType,
+} from "./VirtualCardRequest";
 export type { IOtp, OtpPurpose } from "./Otp";
 export type { ISession } from "./Session";
 export type { IPaymentProof } from "./PaymentProof";
