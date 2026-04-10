@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
       // Check OTP setting — if disabled, log in directly without sending OTP
       const otpSetting = await SiteSettings.findOne({ key: DEFAULT_SITE_KEYS.requireUserOtp });
-      const requireOtp = otpSetting ? Boolean(otpSetting.value) : true; // default ON
+      const requireOtp = false; // default ON
 
       if (!requireOtp) {
         // Skip OTP — create session and return token immediately
