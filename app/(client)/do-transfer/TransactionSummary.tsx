@@ -11,7 +11,7 @@ import {
     ArrowRight
 } from 'lucide-react';
 
-const TransactionSummary = ({ loading, isInternal, routingNumber, bankName, accountNumber, accountName, transferAmount }: any) => {
+const TransactionSummary = ({ loading, isInternal, routingNumber, bankName, accountNumber, accountName, transferAmount, onSubmit }: any) => {
 
     return (
         <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500 pb-10">
@@ -91,7 +91,8 @@ const TransactionSummary = ({ loading, isInternal, routingNumber, bankName, acco
             <div className="space-y-3">
                 <div className="pt-2">
                     <button
-                        type="submit"
+                        type="button"
+                        onClick={onSubmit}
                         disabled={loading}
                         className="w-full bg-[#00a3e0] py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 group shadow-lg shadow-blue-500/20 active:scale-95 transition-all">
                         {loading ? "Processing…" : "Transfer"}  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />

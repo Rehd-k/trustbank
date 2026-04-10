@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Settings, Bell, Send, RefreshCw, Plus, Users } from 'lucide-react';
+import { Send, RefreshCw, Plus, Users } from 'lucide-react';
 import TransferAmountSection from './TransferAmountSection';
 import BeneficiaryDetailsForm from './BeneficiaryDetailsForm';
 import TransactionSummary from './TransactionSummary';
@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import TransferReceiptModal from '@/src/receipts/TransferReceiptModal';
 import { TransferReceiptData } from '@/src/receipts/transferReceipt';
+import TransactionPinModal from '@/src/components/TransactionPinModal';
 
 type User = {
     _id: string;
@@ -39,6 +40,7 @@ const LocalTransferPage = () => {
     const [isInternal, setIsInternal] = useState(true)
     const [receipt, setReceipt] = useState<TransferReceiptData | null>(null)
     const [description, setDescription] = useState("")
+    const [showPinModal, setShowPinModal] = useState(false);
 
     const getUserInfo = async () => {
         try {
@@ -59,8 +61,7 @@ const LocalTransferPage = () => {
     }, [])
 
 
-    async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
+    async function handleSubmit() {
         setLoading(true)
         setError("");
         if (!localStorage.getItem("token")) {
@@ -125,27 +126,7 @@ const LocalTransferPage = () => {
 
     return (
 
-        <form onSubmit={handleSubmit} className="min-h-screen bg-[#0b0e14] text-white font-sans">
-            {/* Header Navigation */}
-            <div className="p-6 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button className="bg-[#1a1d24] p-2 rounded-xl text-gray-400">
-                        <ArrowLeft size={20} />
-                    </button>
-                    <h1 className="text-lg font-bold">Local Transfer</h1>
-                </div>
-                <div className="flex gap-3">
-                    <button className="text-yellow-500 bg-[#1a1d24] p-2 rounded-xl">
-                        <Settings size={20} />
-                    </button>
-                    <div className="relative bg-[#1a1d24] p-2 rounded-xl">
-                        <Bell size={20} className="text-gray-400" />
-                        <span className="absolute top-2 right-2 bg-red-500 text-[8px] rounded-full w-4 h-4 flex items-center justify-center font-bold border-2 border-[#1a1d24]">
-                            4
-                        </span>
-                    </div>
-                </div>
-            </div>
+        <div className="min-h-screen bg-[#0b0e14] text-white font-sans">
 
             {/* Main Blue Card */}
             <div className="px-2">
@@ -208,7 +189,7 @@ const LocalTransferPage = () => {
             </div>
 
             <div className="px-6 mt-8 pb-10">
-                <TransactionSummary loading={loading} isInternal={isInternal} routingNumber={routingNumber} bankName={bankName} accountNumber={accountNumber} accountName={accountName} transferAmount={transferAmount} />
+                <TransactionSummary loading={loading} isInternal={isInternal} routingNumber={routingNumber} bankName={bankName} accountNumber={accountNumber} accountName={accountName} transferAmount={transferAmount} onSubmit={() => setShowPinModal(true)} />
             </div>
 
 
@@ -218,7 +199,14 @@ const LocalTransferPage = () => {
                 onClose={() => setReceipt(null)}
                 onAnotherTransfer={() => setReceipt(null)}
             />
-        </form>
+
+            <TransactionPinModal
+                isOpen={showPinModal}
+                onClose={() => setShowPinModal(false)}
+                onVerified={() => { setShowPinModal(false); handleSubmit(); }}
+                title="Authorize Local Transfer"
+            />
+        </div>
     );
 };
 

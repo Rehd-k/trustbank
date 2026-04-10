@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { Plus, X, ArrowLeftRight } from "lucide-react";
+import { Plus, X, ArrowLeftRight, CheckCircle2, XCircle, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 
 type Tx = {
   _id: string;
@@ -13,12 +13,15 @@ type Tx = {
   type: string;
   status: string;
   date: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
 };
 
 const STATUS_STYLES: Record<string, string> = {
   completed: "bg-green-500/10 text-green-400 border-green-500/20",
   pending: "bg-amber-500/10 text-amber-400 border-amber-500/20",
   failed: "bg-red-500/10 text-red-400 border-red-500/20",
+  reversed: "bg-slate-500/10 text-slate-400 border-slate-500/20",
 };
 
 export default function AdminTransactionsPage() {
@@ -29,6 +32,8 @@ export default function AdminTransactionsPage() {
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   function load() {
     setLoading(true);
@@ -65,6 +70,36 @@ export default function AdminTransactionsPage() {
         setIsError(true);
       })
       .finally(() => setCreating(false));
+  }
+
+  async function handleApprove(txId: string) {
+    setActionLoading(txId);
+    try {
+      await api.patch(`/api/admin/transactions/${txId}`, { status: "completed" });
+      setMessage("Transaction approved and balance deducted.");
+      setIsError(false);
+      load();
+    } catch (err: any) {
+      setMessage("Error: " + (err.response?.data?.error ?? "Approve failed"));
+      setIsError(true);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleReject(txId: string) {
+    setActionLoading(txId);
+    try {
+      await api.patch(`/api/admin/transactions/${txId}`, { status: "failed" });
+      setMessage("Transaction rejected.");
+      setIsError(false);
+      load();
+    } catch (err: any) {
+      setMessage("Error: " + (err.response?.data?.error ?? "Reject failed"));
+      setIsError(true);
+    } finally {
+      setActionLoading(null);
+    }
   }
 
   return (
@@ -153,7 +188,7 @@ export default function AdminTransactionsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-700/60">
-                {["From", "To", "Amount", "Type", "Status", "Date"].map((h) => (
+                {["From", "To", "Amount", "Type", "Status", "Date", "Actions"].map((h) => (
                   <th key={h} className="px-5 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -162,28 +197,90 @@ export default function AdminTransactionsPage() {
               {loading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i} className="border-b border-slate-700/40">
-                    {[...Array(6)].map((_, j) => (
+                    {[...Array(7)].map((_, j) => (
                       <td key={j} className="px-5 py-4"><div className="h-4 bg-slate-700/60 rounded animate-pulse w-20" /></td>
                     ))}
                   </tr>
                 ))
               ) : list.length === 0 ? (
-                <tr><td colSpan={6} className="px-5 py-12 text-center text-slate-500">No transactions found</td></tr>
+                <tr><td colSpan={7} className="px-5 py-12 text-center text-slate-500">No transactions found</td></tr>
               ) : (
                 list.map((tx) => (
-                  <tr key={tx._id} className="border-b border-slate-700/40 hover:bg-slate-700/20 transition-colors">
-                    <td className="px-5 py-4 text-slate-300 font-mono text-xs">{tx.fromAccount}</td>
-                    <td className="px-5 py-4 text-slate-300 font-mono text-xs">{tx.toAccount}</td>
-                    <td className="px-5 py-4 font-semibold text-white">{tx.currency} {tx.amount?.toLocaleString()}</td>
-                    <td className="px-5 py-4 text-slate-400 capitalize">{tx.type}</td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize
-                        ${STATUS_STYLES[tx.status?.toLowerCase()] ?? "bg-slate-700/60 text-slate-400 border-slate-600"}`}>
-                        {tx.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-slate-400 text-xs">{new Date(tx.date).toLocaleString()}</td>
-                  </tr>
+                  <>
+                    <tr key={tx._id} className="border-b border-slate-700/40 hover:bg-slate-700/20 transition-colors">
+                      <td className="px-5 py-4 text-slate-300 font-mono text-xs">{tx.fromAccount}</td>
+                      <td className="px-5 py-4 text-slate-300 font-mono text-xs">{tx.toAccount}</td>
+                      <td className="px-5 py-4 font-semibold text-white">{tx.currency} {tx.amount?.toLocaleString()}</td>
+                      <td className="px-5 py-4 text-slate-400 capitalize">{tx.type}</td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize
+                          ${STATUS_STYLES[tx.status?.toLowerCase()] ?? "bg-slate-700/60 text-slate-400 border-slate-600"}`}>
+                          {tx.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-slate-400 text-xs">{new Date(tx.date).toLocaleString()}</td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          {tx.status === "pending" && (
+                            <>
+                              <button
+                                onClick={() => handleApprove(tx._id)}
+                                disabled={actionLoading === tx._id}
+                                className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
+                              >
+                                {actionLoading === tx._id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleReject(tx._id)}
+                                disabled={actionLoading === tx._id}
+                                className="flex items-center gap-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
+                              >
+                                <XCircle size={12} />
+                                Reject
+                              </button>
+                            </>
+                          )}
+                          {tx.type === "wire" && tx.metadata && (
+                            <button
+                              onClick={() => setExpandedRow(expandedRow === tx._id ? null : tx._id)}
+                              className="text-blue-400 hover:text-blue-300 transition-colors"
+                            >
+                              {expandedRow === tx._id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedRow === tx._id && tx.metadata && (
+                      <tr key={`${tx._id}-detail`} className="border-b border-slate-700/40 bg-slate-800/30">
+                        <td colSpan={7} className="px-8 py-4">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                            {[
+                              { label: "Account Name", value: tx.metadata.accountName },
+                              { label: "Bank Name", value: tx.metadata.bankName },
+                              { label: "Bank Address", value: tx.metadata.bankAddress },
+                              { label: "Account Type", value: tx.metadata.accountType },
+                              { label: "Country", value: tx.metadata.country },
+                              { label: "SWIFT Code", value: tx.metadata.swiftCode },
+                              { label: "IBAN", value: tx.metadata.ibanNumber },
+                            ].filter(r => r.value).map(({ label, value }) => (
+                              <div key={label}>
+                                <p className="text-slate-500 uppercase tracking-wider mb-1">{label}</p>
+                                <p className="text-white font-medium">{String(value)}</p>
+                              </div>
+                            ))}
+                          </div>
+                          {tx.description && (
+                            <div className="mt-3">
+                              <p className="text-slate-500 uppercase tracking-wider text-xs mb-1">Note</p>
+                              <p className="text-white text-sm">{tx.description}</p>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))
               )}
             </tbody>

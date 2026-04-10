@@ -9,7 +9,7 @@ const CreateTxSchema = z.object({
   toAccount: z.string(),
   amount: z.number().positive(),
   currency: z.string().length(3).optional(),
-  type: z.enum(["local", "international", "deposit", "withdrawal", "card", "loan", "grant"]).optional(),
+  type: z.enum(["local", "international", "wire", "deposit", "withdrawal", "card", "loan", "grant"]).optional(),
   description: z.string().optional(),
   updateBalances: z.boolean().optional(),
 });

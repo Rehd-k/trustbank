@@ -22,13 +22,80 @@ const InternationalTransferSchema = z.object({
   kind: z.enum(["internal", "external"]).optional(),
 });
 
+const WireTransferSchema = z.object({
+  fromAccountNumber: z.string(),
+  amount: z.number().positive(),
+  accountName: z.string().min(1),
+  accountNumber: z.string().min(1),
+  bankName: z.string().min(1),
+  bankAddress: z.string().optional(),
+  accountType: z.string().optional(),
+  country: z.string().optional(),
+  swiftCode: z.string().optional(),
+  ibanNumber: z.string().optional(),
+  note: z.string().optional(),
+});
+
 export async function POST(request: NextRequest) {
   const userId = getUserIdFromRequest(request);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const body = await request.json();
-    const type = body.type as "local" | "international" | undefined;
+    const type = body.type as "local" | "international" | "wire" | undefined;
     const kind = body.kind as "internal" | "external" | undefined;
+
+    await connectDB();
+
+    const user = await User.findById(userId).select("isBlocked transfersDisabled").lean();
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (user.isBlocked) return NextResponse.json({ error: "Account is blocked" }, { status: 403 });
+    if (user.transfersDisabled) return NextResponse.json({ error: "Transfers are disabled for your account" }, { status: 403 });
+
+    // ─── Wire Transfer ───
+    if (type === "wire") {
+      const parsed = WireTransferSchema.safeParse(body);
+      if (!parsed.success) {
+        return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+      }
+      const data = parsed.data;
+
+      const fromAccount = await Account.findOne({
+        accountNumber: data.fromAccountNumber,
+        userId,
+      });
+      if (!fromAccount) {
+        return NextResponse.json({ error: "From account not found" }, { status: 404 });
+      }
+      if (fromAccount.accountBalance < data.amount) {
+        return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
+      }
+
+      // Create pending transaction — no balance deduction yet
+      const tx = await Transaction.create([
+        {
+          date: new Date(),
+          fromAccount: fromAccount.accountNumber,
+          toAccount: data.accountNumber,
+          amount: data.amount,
+          currency: fromAccount.currency,
+          type: "wire",
+          status: "pending",
+          description: data.note || "Wire Transfer",
+          metadata: {
+            accountName: data.accountName,
+            bankName: data.bankName,
+            bankAddress: data.bankAddress,
+            accountType: data.accountType,
+            country: data.country,
+            swiftCode: data.swiftCode,
+            ibanNumber: data.ibanNumber,
+          },
+        },
+      ]);
+      return NextResponse.json(tx[0]);
+    }
+
+    // ─── Local / International Transfer ───
     const schema = type === "international" ? InternationalTransferSchema : LocalTransferSchema;
     const parsed = schema.safeParse(
       type === "international"
@@ -54,13 +121,6 @@ export async function POST(request: NextRequest) {
     const data = parsed.data;
     const transferKind: "internal" | "external" =
       data.kind ?? (type === "international" ? "external" : "internal");
-
-    await connectDB();
-
-    const user = await User.findById(userId).select("isBlocked transfersDisabled").lean();
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-    if (user.isBlocked) return NextResponse.json({ error: "Account is blocked" }, { status: 403 });
-    if (user.transfersDisabled) return NextResponse.json({ error: "Transfers are disabled for your account" }, { status: 403 });
 
     const fromAccount = await Account.findOne({
       accountNumber: data.fromAccountNumber,
@@ -118,9 +178,6 @@ export async function POST(request: NextRequest) {
     } catch (e) {
       throw e;
     }
-    // finally {
-    //   session.endSession();
-    // }
   } catch (e) {
     console.error("Transfer error:", e);
     return NextResponse.json({ error: "Transfer failed" }, { status: 500 });

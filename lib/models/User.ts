@@ -14,6 +14,27 @@ export interface IUser extends Document {
   email: string;
   password: string;
   address?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  nationality?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+  // Next of Kin
+  nextOfKinName?: string;
+  nextOfKinRelationship?: string;
+  nextOfKinPhone?: string;
+  nextOfKinEmail?: string;
+  nextOfKinAddress?: string;
+  // KYC
+  idType?: string;
+  idNumber?: string;
+  ssn?: string;
+  // PINs
+  loginPin?: string;
+  transactionPin?: string;
   securityQuestions: ISecurityQA[];
   accounts: Types.ObjectId[];
   currency: string;
@@ -26,6 +47,8 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidate: string): Promise<boolean>;
+  compareLoginPin(candidate: string): Promise<boolean>;
+  compareTransactionPin(candidate: string): Promise<boolean>;
 }
 
 const SecurityQASchema = new Schema<ISecurityQA>(
@@ -43,6 +66,27 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 6, select: false },
     address: { type: String, default: "" },
+    phone: { type: String, default: "" },
+    dateOfBirth: { type: String, default: "" },
+    gender: { type: String, default: "" },
+    nationality: { type: String, default: "" },
+    city: { type: String, default: "" },
+    state: { type: String, default: "" },
+    zipCode: { type: String, default: "" },
+    country: { type: String, default: "" },
+    // Next of Kin
+    nextOfKinName: { type: String, default: "" },
+    nextOfKinRelationship: { type: String, default: "" },
+    nextOfKinPhone: { type: String, default: "" },
+    nextOfKinEmail: { type: String, default: "" },
+    nextOfKinAddress: { type: String, default: "" },
+    // KYC
+    idType: { type: String, default: "" },
+    idNumber: { type: String, default: "" },
+    ssn: { type: String, default: "" },
+    // PINs — stored hashed, select: false
+    loginPin: { type: String, select: false },
+    transactionPin: { type: String, select: false },
     securityQuestions: {
       type: [SecurityQASchema],
       default: [],
@@ -67,5 +111,18 @@ UserSchema.methods.comparePassword = async function (candidate: string): Promise
   return bcrypt.compare(candidate, this.password);
 };
 
-export const User: Model<IUser> =
-  mongoose.models.User ?? mongoose.model<IUser>("User", UserSchema);
+UserSchema.methods.compareLoginPin = async function (candidate: string): Promise<boolean> {
+  if (!this.loginPin) return false;
+  return bcrypt.compare(candidate, this.loginPin);
+};
+
+UserSchema.methods.compareTransactionPin = async function (candidate: string): Promise<boolean> {
+  if (!this.transactionPin) return false;
+  return bcrypt.compare(candidate, this.transactionPin);
+};
+
+// Delete cached model so hot-reload picks up new schema methods
+if (mongoose.models.User) {
+  delete mongoose.models.User;
+}
+export const User: Model<IUser> = mongoose.model<IUser>("User", UserSchema);

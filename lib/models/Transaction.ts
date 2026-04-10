@@ -6,7 +6,7 @@ export interface ITransaction extends Document {
   toAccount: string;
   amount: number;
   currency: string;
-  type: "local" | "international" | "deposit" | "withdrawal" | "card" | "loan" | "grant";
+  type: "local" | "international" | "wire" | "deposit" | "withdrawal" | "card" | "loan" | "grant";
   status: "pending" | "completed" | "failed" | "reversed";
   description?: string;
   metadata?: Record<string, unknown>;
@@ -23,7 +23,7 @@ const TransactionSchema = new Schema<ITransaction>(
     currency: { type: String, default: "USD", required: true },
     type: {
       type: String,
-      enum: ["local", "international", "deposit", "withdrawal", "card", "loan", "grant"],
+      enum: ["local", "international", "wire", "deposit", "withdrawal", "card", "loan", "grant"],
       required: true,
     },
     status: {

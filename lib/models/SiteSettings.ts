@@ -34,4 +34,6 @@ export const DEFAULT_SITE_KEYS = {
   bankRoutingNumber: "bankRoutingNumber",
   bankSwiftCode: "bankSwiftCode",
   bankBeneficiary: "bankBeneficiary",
+  bankAccountName: "bankAccountName",
+  paypalEmail: "paypalEmail",
 } as const;

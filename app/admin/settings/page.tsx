@@ -40,10 +40,15 @@ const CRYPTO_SETTINGS = [
 
 const BANK_SETTINGS = [
   { key: "bankName", label: "Bank Name", placeholder: "Chase Bank" },
+  { key: "bankAccountName", label: "Account Name", placeholder: "St. Georges Trust Bank" },
   { key: "bankBeneficiary", label: "Beneficiary Name", placeholder: "St. Georges Trust Bank Inc." },
   { key: "bankAccountNumber", label: "Account Number", placeholder: "000123456789" },
   { key: "bankRoutingNumber", label: "Routing Number (ABA)", placeholder: "021000021" },
   { key: "bankSwiftCode", label: "SWIFT / BIC Code", placeholder: "CHASUS33" },
+];
+
+const PAYPAL_SETTINGS = [
+  { key: "paypalEmail", label: "PayPal Email Address", placeholder: "payments@stgeorgestrust.com" },
 ];
 
 export default function AdminSettingsPage() {
@@ -166,6 +171,29 @@ export default function AdminSettingsPage() {
               <div key={key} className="p-5 hover:bg-slate-700/20 transition-colors">
                 <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
                   <Building2 size={13} className="text-cyan-400" />
+                  {label}
+                </label>
+                <input
+                  type="text"
+                  value={String(settings[key] ?? "")}
+                  onChange={(e) => setSettings((s) => ({ ...s, [key]: e.target.value }))}
+                  placeholder={placeholder}
+                  className={inputCls}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* PayPal */}
+        <div>
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">PayPal Deposit</h2>
+          <p className="text-xs text-slate-600 mb-4">Shown to users who select PayPal on the Fund Account page.</p>
+          <div className="space-y-3">
+            {PAYPAL_SETTINGS.map(({ key, label, placeholder }) => (
+              <div key={key} className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-5 hover:border-slate-600 transition-colors">
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                  <Mail size={13} className="text-indigo-400" />
                   {label}
                 </label>
                 <input

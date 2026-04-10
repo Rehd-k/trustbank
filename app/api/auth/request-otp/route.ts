@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           token,
           userId: user._id.toString(),
+          role: user.role,
           expiresIn: "7d",
           otpRequired: false,
         });

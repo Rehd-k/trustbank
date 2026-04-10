@@ -21,7 +21,7 @@ function formatAmount(currency: string, amount: number) {
   }
 }
 
-const BANK_NAME = "St. Georges trust bank cayman";
+const BANK_NAME = "St. Georges Trust Bank Cayman";
 const BANK_WEBSITE = "https://stgeorgestrustbankcayman.com";
 
 async function loadLogoDataUrl() {

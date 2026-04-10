@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     otpRecord.used = true;
     await otpRecord.save();
 
-    const user = await User.findOne({ email: normalizedEmail }).select("_id email");
+    const user = await User.findOne({ email: normalizedEmail }).select("_id email role");
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       token,
       userId: user._id.toString(),
+      role: user.role,
       expiresIn: "7d",
     });
   } catch (e) {

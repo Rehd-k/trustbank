@@ -6,37 +6,54 @@ import Link from "next/link";
 import Image from "next/image";
 import { api } from "@/lib/api";
 import {
-  LayoutDashboard,
-  Users,
-  CreditCard,
-  ArrowLeftRight,
-  Settings,
-  Mail,
-  LogOut,
-  Menu,
-  X,
-  ShieldCheck,
+  LayoutDashboard, Users, CreditCard, ArrowLeftRight, Settings, Mail,
+  LogOut, Menu, X, ShieldCheck, Bell, ChevronDown, Activity, UserCog, Wallet
 } from "lucide-react";
 
-const NAV_LINKS = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/accounts", label: "Accounts", icon: CreditCard },
-  { href: "/admin/transactions", label: "Transactions", icon: ArrowLeftRight },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
-  { href: "/admin/mail", label: "Mail", icon: Mail },
+type NavSection = {
+  title: string;
+  items: { href: string; label: string; icon: React.ComponentType<{ size?: number }>; exact?: boolean }[];
+};
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    title: "Overview",
+    items: [
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+    ],
+  },
+  {
+    title: "Management",
+    items: [
+      { href: "/admin/users", label: "Users", icon: Users },
+      { href: "/admin/accounts", label: "Accounts", icon: Wallet },
+      { href: "/admin/transactions", label: "Transactions", icon: ArrowLeftRight },
+    ],
+  },
+  {
+    title: "Communication",
+    items: [
+      { href: "/admin/mail", label: "Mail Center", icon: Mail },
+    ],
+  },
+  {
+    title: "Configuration",
+    items: [
+      { href: "/admin/settings", label: "Settings", icon: Settings },
+    ],
+  },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [allowed, setAllowed] = useState<boolean | null>(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [admin, setAdmin] = useState<{ email?: string } | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      // No token at all — redirect without showing the spinner
       router.replace("/admin/login");
       return;
     }
@@ -44,10 +61,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .get("/api/me")
       .then((res) => {
         if (res.data.role !== "admin") {
-          setAllowed(false);   // correctly deny non-admins
+          setAllowed(false);
           router.replace("/");
         } else {
           setAllowed(true);
+          setAdmin(res.data);
         }
       })
       .catch(() => {
@@ -81,6 +99,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return pathname?.startsWith(href);
   }
 
+  function getCurrentPageTitle(): string {
+    for (const section of NAV_SECTIONS) {
+      for (const item of section.items) {
+        if (isActive(item.href, item.exact)) return item.label;
+      }
+    }
+    return "Admin";
+  }
+
   return (
     <div className="min-h-screen bg-[#080E1A] text-slate-300 font-sans flex">
       {/* Sidebar overlay on mobile */}
@@ -105,34 +132,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        {/* Admin badge */}
-        <div className="px-6 pt-5 pb-3">
-          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
-            <ShieldCheck size={14} className="text-red-400 shrink-0" />
-            <span className="text-xs font-semibold text-red-400">Admin Panel</span>
+        {/* Admin badge + role */}
+        <div className="px-4 pt-5 pb-3 border-b border-slate-800">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center">
+              <ShieldCheck size={16} className="text-red-400" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-red-400">Admin Panel</p>
+              <p className="text-[10px] text-slate-600 truncate">{admin?.email || ""}</p>
+            </div>
           </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
-          {NAV_LINKS.map(({ href, label, icon: Icon, exact }) => {
-            const active = isActive(href, exact);
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                  ${active
-                    ? "bg-blue-600/20 text-blue-400 border border-blue-500/20"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                  }`}
-              >
-                <Icon size={18} />
-                {label}
-              </Link>
-            );
-          })}
+        {/* Nav sections */}
+        <nav className="flex-1 px-3 py-3 space-y-5 overflow-y-auto">
+          {NAV_SECTIONS.map((section) => (
+            <div key={section.title}>
+              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest px-3 mb-2">{section.title}</p>
+              <div className="space-y-0.5">
+                {section.items.map(({ href, label, icon: Icon, exact }) => {
+                  const active = isActive(href, exact);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                        ${active
+                          ? "bg-blue-600/20 text-blue-400 border border-blue-500/20"
+                          : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                        }`}
+                    >
+                      <Icon size={18} />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Bottom actions */}
@@ -158,20 +197,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex-1 flex flex-col min-h-screen min-w-0">
         {/* Top bar */}
         <header className="h-16 flex items-center justify-between px-6 border-b border-slate-800 bg-[#0F172A]/70 backdrop-blur-md shrink-0">
-          <button
-            className="md:hidden text-slate-400 hover:text-white transition-colors"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu size={22} />
-          </button>
-          <div className="hidden md:block">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-widest">
-              {NAV_LINKS.find((l) => isActive(l.href, l.exact))?.label ?? "Admin"}
+          <div className="flex items-center gap-3">
+            <button
+              className="md:hidden text-slate-400 hover:text-white transition-colors"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu size={22} />
+            </button>
+            <h2 className="text-sm font-semibold text-white">
+              {getCurrentPageTitle()}
             </h2>
           </div>
           <div className="flex items-center gap-3 ml-auto">
-            <div className="w-8 h-8 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
-              <ShieldCheck size={14} className="text-blue-400" />
+            <div className="hidden sm:flex items-center gap-2 bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-1.5">
+              <Activity size={14} className="text-green-400" />
+              <span className="text-xs text-slate-400">System Online</span>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center">
+              <ShieldCheck size={14} className="text-red-400" />
             </div>
           </div>
         </header>
@@ -180,6 +223,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <main className="flex-1 p-6 md:p-8 overflow-y-auto">
           {children}
         </main>
+
+        {/* Admin Footer */}
+        <footer className="border-t border-slate-800 py-4 px-6 bg-[#0F172A]/50">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-600">St. Georges Trust Bank · Admin Panel</p>
+            <p className="text-xs text-slate-700">v1.0.0</p>
+          </div>
+        </footer>
       </div>
     </div>
   );
