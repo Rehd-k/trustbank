@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import SmartSuppProvider from "@/src/components/SmartSuppProvider";
 
 export const metadata: Metadata = {
   title: "St. Georges Trust Bank Cayman",
@@ -17,6 +18,7 @@ export default function RootLayout({
         className="antialiased"
       >
         {children}
+        <SmartSuppProvider />
       </body>
     </html>
   );
